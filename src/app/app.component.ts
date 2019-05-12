@@ -8,8 +8,9 @@ import { HttpClient } from '@angular/common/http'
 })
 export class AppComponent implements OnInit  {
   
-    selectedItem:any = {};
-    processedObject:any = {};
+    recipe:any = {};
+    halfQuality:number = 0;
+    ingArray:Array<object> = [];
 
     constructor(private http:HttpClient){}
 
@@ -17,7 +18,7 @@ export class AppComponent implements OnInit  {
       //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
       //Add 'implements OnInit' to the class.
      
-      this.fetchItem(95);
+      this.fetchItem(977);
 
 
     }
@@ -27,18 +28,46 @@ export class AppComponent implements OnInit  {
     fetchItem(itemID){ //fetches the XivItem Properties for the given ID
 
       this.http.get('https://xivapi.com/recipe/' + itemID).subscribe((response)=>{ 
-          this.selectedItem = response;
-          this.doTheCraftThingCielWants(this.selectedItem);
-      
+          this.recipe = response;
+          this.getHalfQuality(this.recipe);
+          this.collectIngredients(this.recipe);
+          
       });
 
     }
 
-
-    doTheCraftThingCielWants(item)
+    getHalfQuality(item) //gets max potential starting quality for recipe
     {
-        this.processedObject.halfQuality = Math.floor(item.RecipeLevelTable.Quality / 2); 
+      this.halfQuality = Math.floor(item.RecipeLevelTable.Quality / 2); 
+    }
 
+
+    collectIngredients(item) //puts relevant ingredient properties into array of objects
+    {
+        var num = 0
+        var amount = item["AmountIngredient"+num.toString()]
+
+        while(amount>0 && num<8) {
+            
+          var ingredient = {
+            name: <string> item["ItemIngredient"+num.toString()].Name,
+            quantity: <number> amount,
+            icon: <string> "https://xivapi.com" + item["ItemIngredient"+num.toString()].Icon,
+            level: <number> item["ItemIngredient"+num.toString()].LevelItem
+          }
+
+          console.log(ingredient)
+
+          this.ingArray.push(ingredient)
+
+          num += 1
+          amount = item["AmountIngredient"+num.toString()]
+
+        }
+
+        
+
+        
     }
 
 }
