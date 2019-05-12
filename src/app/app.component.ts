@@ -18,7 +18,7 @@ export class AppComponent implements OnInit  {
       //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
       //Add 'implements OnInit' to the class.
      
-      this.fetchItem(977);
+      this.fetchItem(33157);
 
 
     }
@@ -38,7 +38,7 @@ export class AppComponent implements OnInit  {
 
     getHalfQuality(item) //gets max potential starting quality for recipe
     {
-      this.halfQuality = Math.floor(item.RecipeLevelTable.Quality / 2); 
+      this.halfQuality = Math.floor(item.QualityFactor / 100 * item.RecipeLevelTable.Quality / 2); 
     }
 
 
@@ -46,6 +46,7 @@ export class AppComponent implements OnInit  {
     {
         var num = 0
         var amount = item["AmountIngredient"+num.toString()]
+        var totalLevel = 0
 
         while(amount>0 && num<8) {
             
@@ -53,16 +54,28 @@ export class AppComponent implements OnInit  {
             name: <string> item["ItemIngredient"+num.toString()].Name,
             quantity: <number> amount,
             icon: <string> "https://xivapi.com" + item["ItemIngredient"+num.toString()].Icon,
-            level: <number> item["ItemIngredient"+num.toString()].LevelItem
+            level: <number> item["ItemIngredient"+num.toString()].LevelItem,
+            canHQ: <number> item["ItemIngredient"+num.toString()].CanBeHq,
+            qualityPer: <number> 0
           }
 
-          console.log(ingredient)
+          totalLevel += ingredient.quantity * ingredient.level;
+
+          //console.log(ingredient)
+          //console.log(totalLevel)
 
           this.ingArray.push(ingredient)
 
           num += 1
           amount = item["AmountIngredient"+num.toString()]
 
+        }
+        
+        for(var i = 0; i < this.ingArray.length; i++){ //calculates starting quality given by each ingredient
+
+          this.ingArray[i].qualityPer = Math.floor(this.halfQuality*(this.ingArray[i].level/totalLevel)); //errors here but seems to work fine?
+
+          console.log(this.ingArray[i])
         }
 
         
