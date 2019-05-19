@@ -10,7 +10,9 @@ export class AppComponent implements OnInit  {
   
     recipe:any = {};
     halfQuality:number = 0;
-    ingArray:Array<object> = [];
+    ingArray:any = []; //ingredients with relevant info
+    neededQuality:number = 3887;
+    hqArray:any = []; //indexes of ingArray
 
     constructor(private http:HttpClient){}
 
@@ -20,7 +22,7 @@ export class AppComponent implements OnInit  {
      
       this.fetchItem(33157);
 
-
+ 
     }
 
 
@@ -31,6 +33,9 @@ export class AppComponent implements OnInit  {
           this.recipe = response;
           this.getHalfQuality(this.recipe);
           this.collectIngredients(this.recipe);
+          this.hqArray = this.whatToHQ(this.neededQuality, this.ingArray);
+
+          console.log(this.hqArray)
           
       });
 
@@ -42,7 +47,7 @@ export class AppComponent implements OnInit  {
     }
 
 
-    collectIngredients(item) //puts relevant ingredient properties into array of objects
+    collectIngredients(item) //puts relevant ingredient properties into array of objects, finds quality given by each ingredient, sorts array by ingredient level
     {
         var num = 0
         var amount = item["AmountIngredient"+num.toString()]
@@ -59,10 +64,11 @@ export class AppComponent implements OnInit  {
             qualityPer: <number> 0
           }
 
-          totalLevel += ingredient.quantity * ingredient.level;
+          if (ingredient.name == "Gyr Abanian Alchemic"){ //defense agaisnt relevant special case (game says this item can be HQ but it currently never is)
+            ingredient.canHQ = 0;
+          }
 
-          //console.log(ingredient)
-          //console.log(totalLevel)
+          totalLevel += ingredient.quantity * ingredient.level;
 
           this.ingArray.push(ingredient)
 
@@ -73,14 +79,73 @@ export class AppComponent implements OnInit  {
         
         for(var i = 0; i < this.ingArray.length; i++){ //calculates starting quality given by each ingredient
 
-          this.ingArray[i].qualityPer = Math.floor(this.halfQuality*(this.ingArray[i].level/totalLevel)); //errors here but seems to work fine?
+          this.ingArray[i].qualityPer = Math.floor(this.halfQuality*(this.ingArray[i].level/totalLevel)); 
 
           console.log(this.ingArray[i])
         }
 
-        
+        this.ingArray.sort(function(obj1, obj2) { //sort the ingredients by level
 
+          return obj1.level - obj2.level;
+
+        });
+
+        console.log("Sorted by level:")
+        for(var i = 0; i < this.ingArray.length; i++){
+          console.log(this.ingArray[i])
+        }
         
+        
+    }
+
+    whatToHQ(neededQ, ingredients){ // show which ingredints (starting with lowest level) needed HQ to reach desired starting quality
+
+      console.log(neededQ)
+      console.info(ingredients)
+
+      var quality = 0
+      var i = 0
+      var arrayHQ = []
+
+      while (quality < neededQ && i < ingredients.length){ //add ingredients until desired quality reached
+
+        if (ingredients[i].canHQ == 1) {
+
+          for(var j = 0; j < ingredients[i].quantity && quality < neededQ; j++){ 
+
+            quality += ingredients[i].qualityPer
+            console.log("added one "+ingredients[i].name+" at "+ingredients[i].qualityPer+" quality. Total = "+quality+"/"+neededQ)
+    
+            arrayHQ.push(i)
+
+          }
+
+        } else {
+          console.log(ingredients[i].name+" cannot be HQ or contribute quality. Total = "+quality+"/"+neededQ)
+        }
+
+        i++
+
+      }
+
+      console.info(arrayHQ)
+
+      if (ingredients[0].qualityPer <= (quality - neededQ)){ //remove ingredients giving excess quality if necessary
+
+        for(var k = arrayHQ.length-1; k >=0; k--){ 
+        
+          if ((quality - neededQ) >= ingredients[arrayHQ[k]].qualityPer){
+
+            quality -= ingredients[arrayHQ[k]].qualityPer
+            console.log("removing one "+ingredients[arrayHQ[k]].name+" at "+ingredients[arrayHQ[k]].qualityPer+" quality. Total = "+quality+"/"+neededQ)
+            
+            arrayHQ.splice(k, 1)
+          }
+        }
+      }
+
+      return arrayHQ
+
     }
 
 }
